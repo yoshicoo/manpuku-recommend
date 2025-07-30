@@ -3,6 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 import Papa from 'papaparse';
 import { CSVRowData, ReturnGift, APIResponse } from '@/types';
 
+// Allow large CSV uploads (up to 1GB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '1024mb',
+    },
+  },
+};
+
+// Ensure this route runs in the Node.js runtime
+export const runtime = 'nodejs';
+
 const getSupabase = () =>
   createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
