@@ -172,7 +172,7 @@ export default function RecommendPage() {
               )}
             </div>
 
-            {/* サイドバー */
+            {/* サイドバー */}
             <aside className="space-y-4">
               <h3 className="flex items-center font-semibold text-gray-800 space-x-2">
                 <Heart className="text-pink-500" size={16} />
