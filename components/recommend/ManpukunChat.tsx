@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { RecommendationResult, ManpukunExpression } from '@/types';
 import { Star, ExternalLink, Gift, Clock, Truck } from 'lucide-react';
+import Image from 'next/image';
 
 interface ManpukunChatProps {
   recommendations?: RecommendationResult[];
@@ -88,9 +89,13 @@ export default function ManpukunChat({ recommendations, loading }: ManpukunChatP
       {/* まんぷくんのアバター */}
       <div className="flex items-center space-x-4 mb-6">
         <div className="relative">
-          <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-            {/* 実際の実装では画像を使用 */}
-            <span className="text-2xl">🍙</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+            <Image
+              src="/manpukun/puku.png"
+              alt="まんぷくん"
+              width={64}
+              height={64}
+            />
           </div>
           {loading && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
@@ -106,8 +111,13 @@ export default function ManpukunChat({ recommendations, loading }: ManpukunChatP
       <div className="space-y-6">
         {messages.map((message) => (
           <div key={message.id} className="flex space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-sm">🍙</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <Image
+                src="/manpukun/puku.png"
+                alt="まんぷくん"
+                width={40}
+                height={40}
+              />
             </div>
             <div className="flex-1">
               <div className="bg-white rounded-2xl rounded-tl-sm p-4 shadow-sm border">
@@ -228,8 +238,13 @@ export default function ManpukunChat({ recommendations, loading }: ManpukunChatP
         {/* ローディング表示 */}
         {loading && (
           <div className="flex space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-sm">🍙</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <Image
+                src="/manpukun/puku.png"
+                alt="まんぷくん"
+                width={40}
+                height={40}
+              />
             </div>
             <div className="bg-white rounded-2xl rounded-tl-sm p-4 shadow-sm border">
               <div className="flex items-center space-x-2">

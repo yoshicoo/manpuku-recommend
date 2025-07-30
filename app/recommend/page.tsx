@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Heart, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 import UserForm from '@/components/recommend/UserForm';
 import ManpukunChat from '@/components/recommend/ManpukunChat';
 import { RecommendationRequest, RecommendationResult, APIResponse } from '@/types';
@@ -54,8 +55,13 @@ export default function RecommendPage() {
           <div className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-xl">🍙</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                  <Image
+                    src="/manpukun/puku.png"
+                    alt="まんぷくん"
+                    width={40}
+                    height={40}
+                  />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
@@ -86,8 +92,13 @@ export default function RecommendPage() {
           /* 入力フォーム画面 */
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <span className="text-3xl">🍙</span>
+              <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
+                <Image
+                  src="/manpukun/puku.png"
+                  alt="まんぷくん"
+                  width={80}
+                  height={80}
+                />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 こんにちは！まんぷくんです
@@ -152,8 +163,13 @@ export default function RecommendPage() {
               {error && (
                 <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-6">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-sm">🍙</span>
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center overflow-hidden">
+                      <Image
+                        src="/manpukun/puku.png"
+                        alt="まんぷくん"
+                        width={40}
+                        height={40}
+                      />
                     </div>
                     <div>
                       <h4 className="font-semibold text-red-800 mb-1">
