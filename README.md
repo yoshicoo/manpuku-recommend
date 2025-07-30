@@ -146,6 +146,20 @@ manpuku-recommend/
 
 その他のカラムについては `types/index.ts` を参照してください。
 
+### 大きなCSVデータのインポート
+
+大量データを一度に登録する場合は、CSVファイルを Supabase Storage にアップロードしてから
+サーバースクリプトを実行します。
+
+1. [Supabase コンソール](https://app.supabase.com/) で任意のバケットを作成し、CSV ファイルをアップロードします。
+2. 環境変数 `NEXT_PUBLIC_SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` を設定した状態で、次のコマンドを実行します。
+
+```bash
+npx ts-node scripts/import-csv-from-storage.ts <bucket名> <ファイルパス>
+```
+
+アップロードしたファイルをダウンロードして `return_gifts` テーブルへ一括登録します。処理が完了すると `csv_uploads` テーブルにも履歴が記録されます。
+
 ## 🚀 デプロイ
 
 ### Vercel デプロイ
