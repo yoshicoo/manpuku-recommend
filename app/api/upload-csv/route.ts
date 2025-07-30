@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Papa from 'papaparse';
+import Busboy from 'busboy';
+import { Readable } from 'stream';
 import { CSVRowData, ReturnGift, APIResponse } from '@/types';
 
 // Allow large CSV uploads (up to 1GB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '1024mb',
-    },
-  },
-};
-
-// Ensure this route runs in the Node.js runtime
 export const runtime = 'nodejs';
+export const maxDuration = 300; // allow long processing of large files
 
 const getSupabase = () =>
   createClient(
@@ -56,45 +50,67 @@ function transformCSVToReturnGift(csvRow: CSVRowData): Partial<ReturnGift> {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabase();
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
 
-    if (!file) {
-      return NextResponse.json<APIResponse>({
-        success: false,
-        message: 'ファイルが見つかりません。'
-      }, { status: 400 });
-    }
+    const contentType = request.headers.get('content-type') || '';
+    const busboy = Busboy({ headers: { 'content-type': contentType } });
+    let uploadedFilename = '';
 
-    // CSVファイルの内容を読み取り
-    const csvText = await file.text();
-    
-    // Papa Parseを使用してCSVをパース
-    const parseResult = Papa.parse<CSVRowData>(csvText, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: false, // 文字列として保持
-      transformHeader: (header) => header.trim() // ヘッダーの空白を除去
+    const BATCH_SIZE = 1000;
+    let recordCount = 0;
+    let buffer: Partial<ReturnGift>[] = [];
+
+    const parsePromise = new Promise<void>((resolve, reject) => {
+      busboy.on('file', (_field, fileStream, info) => {
+        uploadedFilename = info.filename;
+        const csvStream = fileStream.pipe(
+          Papa.parse(Papa.NODE_STREAM_INPUT, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: false,
+            transformHeader: (header: string) => header.trim(),
+          })
+        );
+
+        csvStream.on('data', async (row: CSVRowData) => {
+          csvStream.pause();
+          try {
+            if (row.返礼品ID && row.返礼品名) {
+              buffer.push(transformCSVToReturnGift(row));
+            }
+            if (buffer.length >= BATCH_SIZE) {
+              const { error } = await supabase.from('return_gifts').insert(buffer);
+              if (error) return reject(error);
+              recordCount += buffer.length;
+              buffer = [];
+            }
+          } catch (err) {
+            return reject(err);
+          } finally {
+            csvStream.resume();
+          }
+        });
+
+        csvStream.on('error', reject);
+      });
+
+      busboy.on('finish', async () => {
+        try {
+          if (buffer.length > 0) {
+            const { error } = await supabase.from('return_gifts').insert(buffer);
+            if (error) return reject(error);
+            recordCount += buffer.length;
+            buffer = [];
+          }
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+
+      busboy.on('error', reject);
+
+      Readable.fromWeb(request.body as any).pipe(busboy);
     });
-
-    if (parseResult.errors.length > 0) {
-      return NextResponse.json<APIResponse>({
-        success: false,
-        message: `CSVパースエラー: ${parseResult.errors[0].message}`
-      }, { status: 400 });
-    }
-
-    // データ変換
-    const returnGifts = parseResult.data
-      .filter(row => row.返礼品ID && row.返礼品名) // 必須フィールドをチェック
-      .map(transformCSVToReturnGift);
-
-    if (returnGifts.length === 0) {
-      return NextResponse.json<APIResponse>({
-        success: false,
-        message: '有効なデータが見つかりませんでした。返礼品IDと返礼品名は必須です。'
-      }, { status: 400 });
-    }
 
     // 既存データを削除
     const { error: deleteError } = await supabase
@@ -110,35 +126,31 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // 新しいデータを一括挿入
-    const { data, error: insertError } = await supabase
-      .from('return_gifts')
-      .insert(returnGifts)
-      .select();
-
-    if (insertError) {
-      console.error('Insert error:', insertError);
+    // ストリームのパースとデータ挿入を実行
+    try {
+      await parsePromise;
+    } catch (parseErr: any) {
+      console.error('Parse error:', parseErr);
       return NextResponse.json<APIResponse>({
         success: false,
-        message: `データ挿入エラー: ${insertError.message}`
-      }, { status: 500 });
+        message: `CSVパースエラー: ${parseErr.message}`
+      }, { status: 400 });
     }
 
     // CSVアップロード履歴を記録
     await supabase
       .from('csv_uploads')
       .insert({
-        filename: file.name,
-        record_count: returnGifts.length,
+        filename: uploadedFilename,
+        record_count: recordCount,
         status: 'completed'
       });
 
     return NextResponse.json<APIResponse>({
       success: true,
-      message: `${returnGifts.length}件のデータを正常にアップロードしました。`,
+      message: `${recordCount}件のデータを正常にアップロードしました。`,
       data: {
-        recordCount: returnGifts.length,
-        uploadedData: data
+        recordCount
       }
     });
 
