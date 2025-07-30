@@ -3,10 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import Papa from 'papaparse';
 import { CSVRowData, ReturnGift, APIResponse } from '@/types';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getSupabase = () =>
+  createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
 // CSVの生データをSupabase用のデータに変換
 function transformCSVToReturnGift(csvRow: CSVRowData): Partial<ReturnGift> {
@@ -42,6 +43,7 @@ function transformCSVToReturnGift(csvRow: CSVRowData): Partial<ReturnGift> {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabase();
     const formData = await request.formData();
     const file = formData.get('file') as File;
 

@@ -3,14 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { RecommendationRequest, RecommendationResult, ReturnGift, APIResponse } from '@/types';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getSupabase = () =>
+  createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+const getOpenAI = () =>
+  new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+  });
 
 // カテゴリマッピング（ユーザー選択 → DB検索用）
 const categoryMapping: Record<string, string[]> = {
@@ -44,6 +46,7 @@ const allergyMapping: Record<string, string[]> = {
 
 // 返礼品をフィルタリングする関数
 async function filterReturnGifts(request: RecommendationRequest): Promise<ReturnGift[]> {
+  const supabase = getSupabase();
   let query = supabase
     .from('return_gifts')
     .select('*')
@@ -189,6 +192,7 @@ ${index + 1}. ${gift.name}
 `;
 
   try {
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
