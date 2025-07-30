@@ -173,3 +173,22 @@ export default function RecommendPage() {
             </div>
 
             {/* サイドバー */
+            <aside className="space-y-4">
+              <h3 className="flex items-center font-semibold text-gray-800 space-x-2">
+                <Heart className="text-pink-500" size={16} />
+                <span>おすすめ一覧</span>
+              </h3>
+              <ul className="space-y-2">
+                {recommendations.map((rec, i) => (
+                  <li key={i} className="bg-white p-2 rounded-lg shadow text-sm">
+                    {rec.gift.name}
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
