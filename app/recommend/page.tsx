@@ -101,11 +101,11 @@ export default function RecommendPage() {
                 />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                こんにちは！まんぷくんです
+                こんプクは！まんぷくんプク！
               </h2>
               <p className="text-gray-600 leading-relaxed">
                 あなたの好みや条件を教えてもらえれば、<br />
-                ぴったりの返礼品をおすすめさせてもらいますで〜！
+                ぴったりの返礼品をおすすめするプクよ～
               </p>
             </div>
 
