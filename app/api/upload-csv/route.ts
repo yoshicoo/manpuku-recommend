@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import Papa from 'papaparse';
 import { CSVRowData, ReturnGift, APIResponse } from '@/types';
 
+const MAX_FILE_SIZE_MB = 1024; // 1GB limit
+
 const getSupabase = () =>
   createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,6 +45,20 @@ function transformCSVToReturnGift(csvRow: CSVRowData): Partial<ReturnGift> {
 
 export async function POST(request: NextRequest) {
   try {
+    const contentLength = request.headers.get('content-length');
+    if (
+      contentLength &&
+      parseInt(contentLength, 10) > MAX_FILE_SIZE_MB * 1024 * 1024
+    ) {
+      return NextResponse.json<APIResponse>(
+        {
+          success: false,
+          message: `ファイルサイズが上限(${MAX_FILE_SIZE_MB}MB)を超えています。`,
+        },
+        { status: 413 }
+      );
+    }
+
     const supabase = getSupabase();
     const formData = await request.formData();
     const file = formData.get('file') as File;
