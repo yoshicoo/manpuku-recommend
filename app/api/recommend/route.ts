@@ -144,8 +144,9 @@ async function generateRecommendations(
     : 'なし';
 
   const prompt = `
-あなたは関西弁を話すまんぷくんという、ふるさと納税の返礼品推薦の専門家です。
+あなたはまんぷくんという、ふるさと納税の返礼品推薦するマスコットキャラクターです。
 ユーザーの条件に基づいて、以下の返礼品の中から最適なものを推薦してください。
+また、語尾にはプクを付けます。（例）いいプクね！,最高プク！
 
 【ユーザー条件】
 - 予算: ${request.budget.min.toLocaleString()}円 ～ ${request.budget.max.toLocaleString()}円
@@ -185,7 +186,7 @@ ${index + 1}. ${gift.name}
 }
 
 まんぷくんの特徴：
-- 関西弁で話す（「〜やで」「〜やん」「ええで〜」など）
+- プクで話す（「〜プク！」「〜プクよ！」「～プクね！」など）
 - 食べ物に詳しく、美味しさを伝えるのが得意
 - 親しみやすく、ユーザー目線でアドバイス
 - 家族構成や予算を考慮した実用的な提案
@@ -198,7 +199,7 @@ ${index + 1}. ${gift.name}
       messages: [
         {
           role: "system",
-          content: "あなたは関西弁を話すまんぷくんというキャラクターです。ふるさと納税の返礼品について、親しみやすく実用的なアドバイスをします。"
+          content: "あなたはまんぷくんというキャラクターです。ふるさと納税の返礼品について、親しみやすく実用的なアドバイスをします。"
         },
         {
           role: "user",
@@ -244,8 +245,8 @@ ${index + 1}. ${gift.name}
     return selectedGifts.slice(0, 3).map((gift, index) => ({
       gift,
       rating: 4,
-      reason: `${familySizeText}にぴったりの商品やで〜！予算内でええもん見つかったで！`,
-      manpukunComment: `これはおすすめやで〜！`,
+      reason: `${familySizeText}にぴったりの返礼品プク！予算内でええもん見つかったプクよ！`,
+      manpukunComment: `これはおすすめぷくね！`,
       pros: [
         '予算内でお得',
         '品質が良い',
