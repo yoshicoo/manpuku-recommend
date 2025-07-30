@@ -3,10 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { RecommendationRequest, RecommendationResult, ReturnGift, APIResponse } from '@/types';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getSupabase = () =>
+  createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -44,6 +45,7 @@ const allergyMapping: Record<string, string[]> = {
 
 // 返礼品をフィルタリングする関数
 async function filterReturnGifts(request: RecommendationRequest): Promise<ReturnGift[]> {
+  const supabase = getSupabase();
   let query = supabase
     .from('return_gifts')
     .select('*')
