@@ -114,7 +114,7 @@ export default function AdminPage() {
               </h3>
               <ul className="text-sm text-yellow-700 space-y-1">
                 <li>• アップロード時に既存の全データが削除されます</li>
-                <li>• ファイルサイズは最大10MBまでです</li>
+                <li>• ファイルサイズは最大1GBまでです</li>
                 <li>• UTF-8エンコーディングで保存されたCSVファイルを使用してください</li>
                 <li>• 必須項目：返礼品ID、返礼品名、寄付金額</li>
                 <li>• アップロード中はブラウザを閉じないでください</li>
