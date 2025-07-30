@@ -9,9 +9,10 @@ const getSupabase = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+const getOpenAI = () =>
+  new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+  });
 
 // カテゴリマッピング（ユーザー選択 → DB検索用）
 const categoryMapping: Record<string, string[]> = {
@@ -191,6 +192,7 @@ ${index + 1}. ${gift.name}
 `;
 
   try {
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
