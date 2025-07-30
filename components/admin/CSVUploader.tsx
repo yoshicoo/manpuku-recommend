@@ -5,6 +5,8 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { APIResponse } from '@/types';
 
+const MAX_FILE_SIZE_MB = 4;
+
 interface CSVUploaderProps {
   onUploadComplete?: (recordCount: number) => void;
 }
@@ -25,6 +27,14 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
       setUploadStatus({
         type: 'error',
         message: 'CSVファイルのみアップロード可能です。'
+      });
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setUploadStatus({
+        type: 'error',
+        message: `ファイルサイズは${MAX_FILE_SIZE_MB}MB以内にしてください。`
       });
       return;
     }
@@ -114,7 +124,7 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
                   CSVファイルをドラッグ&ドロップ
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  または、クリックしてファイルを選択
+                  または、クリックしてファイルを選択 (最大{MAX_FILE_SIZE_MB}MB)
                 </p>
               </>
             )}
@@ -164,6 +174,7 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
               <li>• ヘッダー行を含むCSV形式である必要があります</li>
               <li>• 文字コードはUTF-8で保存してください</li>
               <li>• 必須項目：返礼品ID、返礼品名、寄付金額</li>
+              <li>• ファイルサイズは{MAX_FILE_SIZE_MB}MB以内にしてください</li>
               <li>• アップロード前に既存データは削除されます</li>
             </ul>
           </div>
