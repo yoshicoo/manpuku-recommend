@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Papa from 'papaparse';
 import { Readable } from 'stream';
+import Busboy from 'busboy';
 import { CSVRowData, ReturnGift, APIResponse } from '@/types';
 import { transformCSVToReturnGift } from '@/lib/transform';
 
@@ -55,68 +56,87 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<APIResponse>({ success: false, message: 'Invalid payload' }, { status: 400 });
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-
-    if (!file) {
+    if (!contentType.includes('multipart/form-data')) {
       return NextResponse.json<APIResponse>({
         success: false,
-        message: 'ファイルが見つかりません。'
+        message: 'multipart/form-data expected'
       }, { status: 400 });
     }
 
-    // Node.js Readable stream へ変換
-    const nodeStream = Readable.fromWeb((file as any).stream());
-
+    let filename = '';
     const BATCH_SIZE = 1000;
     let recordCount = 0;
     let buffer: Partial<ReturnGift>[] = [];
 
+    const busboy = Busboy({ headers: Object.fromEntries(request.headers) });
+
     const parsePromise = new Promise<void>((resolve, reject) => {
-      const csvStream = nodeStream.pipe(
-        Papa.parse(Papa.NODE_STREAM_INPUT, {
-          header: true,
-          skipEmptyLines: true,
-          dynamicTyping: false,
-          transformHeader: (header: string) => header.trim(),
-        })
-      );
+      busboy.on('file', (_field, stream, info) => {
+        filename = info.filename;
 
-      csvStream.on('data', async (row: CSVRowData) => {
-        csvStream.pause();
-        try {
-          if (row.返礼品ID && row.返礼品名) {
-            buffer.push(transformCSVToReturnGift(row));
+        const csvStream = stream.pipe(
+          Papa.parse(Papa.NODE_STREAM_INPUT, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: false,
+            transformHeader: (header: string) => header.trim(),
+          })
+        );
+
+        csvStream.on('data', async (row: CSVRowData) => {
+          csvStream.pause();
+          try {
+            if (row.返礼品ID && row.返礼品名) {
+              buffer.push(transformCSVToReturnGift(row));
+            }
+            if (buffer.length >= BATCH_SIZE) {
+              const { error } = await supabase.from('return_gifts').insert(buffer);
+              if (error) return reject(error);
+              recordCount += buffer.length;
+              buffer = [];
+            }
+          } catch (err) {
+            return reject(err);
+          } finally {
+            csvStream.resume();
           }
-          if (buffer.length >= BATCH_SIZE) {
-            const { error } = await supabase.from('return_gifts').insert(buffer);
-            if (error) return reject(error);
-            recordCount += buffer.length;
-            buffer = [];
+        });
+
+        csvStream.on('end', async () => {
+          try {
+            if (buffer.length > 0) {
+              const { error } = await supabase.from('return_gifts').insert(buffer);
+              if (error) return reject(error);
+              recordCount += buffer.length;
+              buffer = [];
+            }
+            resolve();
+          } catch (err) {
+            reject(err);
           }
-        } catch (err) {
-          return reject(err);
-        } finally {
-          csvStream.resume();
+        });
+
+        csvStream.on('error', reject);
+      });
+
+      busboy.on('error', reject);
+
+      // When busboy finishes reading the request body, if no file event was emitted,
+      // resolve to avoid hanging the request.
+      busboy.on('finish', () => {
+        if (!filename) {
+          reject(new Error('ファイルが見つかりません。'));
         }
       });
 
-      csvStream.on('end', async () => {
-        try {
-          if (buffer.length > 0) {
-            const { error } = await supabase.from('return_gifts').insert(buffer);
-            if (error) return reject(error);
-            recordCount += buffer.length;
-            buffer = [];
-          }
-          resolve();
-        } catch (err) {
-          reject(err);
-        }
-      });
-
-      csvStream.on('error', reject);
+      // Pipe the incoming request body to busboy
+      if (request.body) {
+        Readable.fromWeb(request.body as any).pipe(busboy);
+      } else {
+        reject(new Error('No request body'));
+      }
     });
+
 
     // 既存データを削除
     const { error: deleteError } = await supabase
@@ -147,7 +167,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('csv_uploads')
       .insert({
-        filename: file.name,
+        filename,
         record_count: recordCount,
         status: 'completed'
       });
