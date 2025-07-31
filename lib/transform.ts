@@ -1,12 +1,19 @@
 import { CSVRowData, ReturnGift } from '@/types';
 
+// 日付文字列を安全にISO形式へ変換
+function safeParseDate(value?: string): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 export function transformCSVToReturnGift(csvRow: CSVRowData): Partial<ReturnGift> {
   return {
     gift_id: csvRow.返礼品ID,
     name: csvRow.返礼品名,
     description: csvRow.返礼品説明 || '',
-    start_date: csvRow.提供開始日時 ? new Date(csvRow.提供開始日時).toISOString() : undefined,
-    end_date: csvRow.提供終了日時 ? new Date(csvRow.提供終了日時).toISOString() : undefined,
+    start_date: safeParseDate(csvRow.提供開始日時),
+    end_date: safeParseDate(csvRow.提供終了日時),
     donation_amount: parseInt(csvRow.寄付金額) || 0,
     stock_quantity: csvRow.在庫数 ? parseFloat(csvRow.在庫数) : undefined,
     capacity_weight: csvRow['容量・重さ'] || '',
