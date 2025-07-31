@@ -60,6 +60,7 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
           skipEmptyLines: true,
           dynamicTyping: false,
           worker: true,
+          transformHeader: (h) => h.trim().replace(/^\uFEFF/, ''),
           chunk: async (results, parser) => {
             parser.pause();
             try {
