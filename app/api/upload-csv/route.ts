@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
             header: true,
             skipEmptyLines: true,
             dynamicTyping: false,
-            transformHeader: (header: string) => header.trim(),
+            transformHeader: (header: string) =>
+              header.replace(/^\uFEFF/, '').trim(),
           })
         );
 
