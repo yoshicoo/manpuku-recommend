@@ -3,9 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import Papa from 'papaparse';
-import { APIResponse, CSVRowData, ReturnGift } from '@/types';
-import { transformCSVToReturnGift } from '@/lib/transform';
+import { APIResponse } from '@/types';
 
 interface CSVUploaderProps {
   onUploadComplete?: (recordCount: number) => void;
@@ -34,80 +32,28 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
     setUploading(true);
     setUploadStatus({ type: null, message: '' });
 
-    const BATCH_SIZE = 1000;
-    let buffer: Partial<ReturnGift>[] = [];
-    let totalCount = 0;
-
-    const postJSON = async (payload: any) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
       const res = await fetch('/api/upload-csv', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: formData
       });
-      const json: APIResponse = await res.json();
+      const json: APIResponse<{ recordCount: number }> = await res.json();
+
       if (!json.success) {
         throw new Error(json.message);
       }
-    };
 
-    try {
-      // initialize by clearing existing data
-      await postJSON({ init: true });
-
-      await new Promise<void>((resolve, reject) => {
-        Papa.parse<CSVRowData>(file, {
-          header: true,
-          skipEmptyLines: true,
-          dynamicTyping: false,
-          worker: true,
-          chunk: async (results, parser) => {
-            parser.pause();
-            try {
-              for (const row of results.data) {
-                const sanitized: Partial<CSVRowData> = {};
-                for (const [key, value] of Object.entries(row as CSVRowData)) {
-                  sanitized[key.replace(/^\uFEFF/, '').trim() as keyof CSVRowData] = value as any;
-                }
-                if ((sanitized as CSVRowData).返礼品ID && (sanitized as CSVRowData).返礼品名) {
-                  buffer.push(transformCSVToReturnGift(sanitized as CSVRowData));
-                }
-                if (buffer.length >= BATCH_SIZE) {
-                  const batch = buffer.splice(0, buffer.length);
-                  await postJSON({ records: batch });
-                  totalCount += batch.length;
-                }
-              }
-            } catch (err) {
-              parser.abort();
-              return reject(err);
-            }
-            parser.resume();
-          },
-          complete: async () => {
-            try {
-              if (buffer.length > 0) {
-                const batch = buffer.splice(0, buffer.length);
-                await postJSON({ records: batch });
-                totalCount += batch.length;
-              }
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          },
-          error: (err) => reject(err)
-        });
-      });
-
-      await postJSON({ final: true, filename: file.name, totalCount });
+      const count = json.data?.recordCount || 0;
 
       setUploadStatus({
         type: 'success',
-        message: `${totalCount}件のデータを正常にアップロードしました。`,
-        recordCount: totalCount
+        message: `${count}件のデータを正常にアップロードしました。`,
+        recordCount: count
       });
 
-      onUploadComplete?.(totalCount);
+      onUploadComplete?.(count);
     } catch (error: any) {
       setUploadStatus({
         type: 'error',
