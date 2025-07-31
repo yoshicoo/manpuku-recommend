@@ -3,16 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { RecommendationRequest, RecommendationResult, ReturnGift, APIResponse } from '@/types';
 
-const getSupabase = () =>
-  createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+const getSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabaseの環境変数が設定されていません");
+  }
+  return createClient(url, key);
+};
 
-const getOpenAI = () =>
-  new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY!,
-  });
+const getOpenAI = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OpenAI APIキーが設定されていません");
+  }
+  return new OpenAI({ apiKey });
+};
 
 // カテゴリマッピング（ユーザー選択 → DB検索用）
 const categoryMapping: Record<string, string[]> = {
@@ -195,7 +201,7 @@ ${index + 1}. ${gift.name}
   try {
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4.1",
       messages: [
         {
           role: "system",

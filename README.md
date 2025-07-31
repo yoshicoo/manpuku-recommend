@@ -14,7 +14,7 @@
 - **フロントエンド**: Next.js 14 (App Router), React, Tailwind CSS
 - **バックエンド**: Next.js API Routes
 - **データベース**: Supabase (PostgreSQL)
-- **AI**: OpenAI GPT-4
+- **AI**: OpenAI ChatGPT 4.1
 - **デプロイ**: Vercel
 - **ファイル処理**: Papa Parse
 
