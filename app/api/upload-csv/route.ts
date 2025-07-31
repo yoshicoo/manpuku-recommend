@@ -19,41 +19,6 @@ const getSupabase = () =>
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabase();
-    const contentType = request.headers.get('content-type') || '';
-
-    if (contentType.includes('application/json')) {
-      const body = await request.json();
-      const { init, final, records, filename, totalCount } = body as {
-        init?: boolean;
-        final?: boolean;
-        filename?: string;
-        totalCount?: number;
-        records?: Partial<ReturnGift>[];
-      };
-
-      if (init) {
-        const { error } = await supabase.from('return_gifts').delete().neq('id', 0);
-        if (error) {
-          return NextResponse.json<APIResponse>({ success: false, message: '既存データの削除に失敗しました。' }, { status: 500 });
-        }
-        return NextResponse.json<APIResponse>({ success: true, message: 'initialized' });
-      }
-
-      if (records && records.length > 0) {
-        const { error } = await supabase.from('return_gifts').insert(records);
-        if (error) {
-          return NextResponse.json<APIResponse>({ success: false, message: error.message }, { status: 500 });
-        }
-        return NextResponse.json<APIResponse>({ success: true, message: `${records.length} records inserted` });
-      }
-
-      if (final && filename) {
-        await supabase.from('csv_uploads').insert({ filename, record_count: totalCount || 0, status: 'completed' });
-        return NextResponse.json<APIResponse>({ success: true, message: 'completed' });
-      }
-
-      return NextResponse.json<APIResponse>({ success: false, message: 'Invalid payload' }, { status: 400 });
-    }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
