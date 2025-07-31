@@ -7,6 +7,7 @@ import { transformCSVToReturnGift } from '@/lib/transform';
 
 // Allow large CSV uploads (up to 1GB)
 export const runtime = 'nodejs';
+export const maxDuration = 300;
 
 const getSupabase = () =>
   createClient(

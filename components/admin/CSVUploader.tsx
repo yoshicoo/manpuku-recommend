@@ -3,9 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import Papa from 'papaparse';
-import { APIResponse, CSVRowData, ReturnGift } from '@/types';
-import { transformCSVToReturnGift } from '@/lib/transform';
+import { APIResponse } from '@/types';
 
 interface CSVUploaderProps {
   onUploadComplete?: (recordCount: number) => void;
@@ -35,79 +33,28 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
     setUploadStatus({ type: null, message: '' });
 
     try {
-      const CHUNK_SIZE = 1000;
-      let recordCount = 0;
-      let batch: Partial<ReturnGift>[] = [];
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // initialize
-      await fetch('/api/upload-csv', {
+      const res = await fetch('/api/upload-csv', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ init: true })
+        body: formData
       });
+      const json: APIResponse<{ recordCount: number }> = await res.json();
 
-      await new Promise<void>((resolve, reject) => {
-        Papa.parse<CSVRowData>(file, {
-          header: true,
-          skipEmptyLines: true,
-          worker: true,
-          step: async ({ data }: Papa.ParseStepResult<CSVRowData>, parser) => {
-            parser.pause();
-            try {
-              if (data.返礼品ID && data.返礼品名) {
-                batch.push(transformCSVToReturnGift(data));
-              }
-              if (batch.length >= CHUNK_SIZE) {
-                const res = await fetch('/api/upload-csv', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ records: batch })
-                });
-                const json: APIResponse = await res.json();
-                if (!json.success) return reject(new Error(json.message));
-                recordCount += batch.length;
-                batch = [];
-              }
-            } catch (e) {
-              return reject(e as Error);
-            } finally {
-              parser.resume();
-            }
-          },
-          complete: async () => {
-            try {
-              if (batch.length > 0) {
-                const res = await fetch('/api/upload-csv', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ records: batch })
-                });
-                const json: APIResponse = await res.json();
-                if (!json.success) return reject(new Error(json.message));
-                recordCount += batch.length;
-                batch = [];
-              }
-              resolve();
-            } catch (e) {
-              reject(e as Error);
-            }
-          },
-          error: (err) => reject(err)
-        });
-      });
-
-      await fetch('/api/upload-csv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ final: true, filename: file.name, totalCount: recordCount })
-      });
+      if (!json.success) {
+        throw new Error(json.message);
+      }
 
       setUploadStatus({
         type: 'success',
-        message: `${recordCount}件のデータを正常にアップロードしました。`,
-        recordCount
+        message: json.message,
+        recordCount: json.data?.recordCount
       });
-      onUploadComplete?.(recordCount);
+
+      if (json.data?.recordCount) {
+        onUploadComplete?.(json.data.recordCount);
+      }
     } catch (error: any) {
       setUploadStatus({
         type: 'error',
