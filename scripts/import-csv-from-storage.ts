@@ -20,7 +20,13 @@ async function main() {
   }
 
   const text = await file.text();
-  const parseResult = Papa.parse<CSVRowData>(text, { header: true, skipEmptyLines: true, dynamicTyping: false });
+  const parseResult = Papa.parse<CSVRowData>(text, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: false,
+    transformHeader: (header: string) =>
+      header.replace(/^\uFEFF/, '').trim(),
+  });
 
   if (parseResult.errors.length > 0) {
     throw new Error(parseResult.errors[0].message);
