@@ -3,7 +3,9 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import { APIResponse } from '@/types';
+import Papa from 'papaparse';
+import { APIResponse, CSVRowData, ReturnGift } from '@/types';
+import { transformCSVToReturnGift } from '@/lib/transform';
 
 interface CSVUploaderProps {
   onUploadComplete?: (recordCount: number) => void;
@@ -32,29 +34,76 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
     setUploading(true);
     setUploadStatus({ type: null, message: '' });
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    const BATCH_SIZE = 1000;
+    let buffer: Partial<ReturnGift>[] = [];
+    let totalCount = 0;
 
+    const postJSON = async (payload: any) => {
       const res = await fetch('/api/upload-csv', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
-      const json: APIResponse<{ recordCount: number }> = await res.json();
-
+      const json: APIResponse = await res.json();
       if (!json.success) {
         throw new Error(json.message);
       }
+    };
+
+    try {
+      // initialize by clearing existing data
+      await postJSON({ init: true });
+
+      await new Promise<void>((resolve, reject) => {
+        Papa.parse<CSVRowData>(file, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false,
+          worker: true,
+          chunk: async (results, parser) => {
+            parser.pause();
+            try {
+              for (const row of results.data) {
+                if ((row as CSVRowData).返礼品ID && (row as CSVRowData).返礼品名) {
+                  buffer.push(transformCSVToReturnGift(row as CSVRowData));
+                }
+                if (buffer.length >= BATCH_SIZE) {
+                  const batch = buffer.splice(0, buffer.length);
+                  await postJSON({ records: batch });
+                  totalCount += batch.length;
+                }
+              }
+            } catch (err) {
+              parser.abort();
+              return reject(err);
+            }
+            parser.resume();
+          },
+          complete: async () => {
+            try {
+              if (buffer.length > 0) {
+                const batch = buffer.splice(0, buffer.length);
+                await postJSON({ records: batch });
+                totalCount += batch.length;
+              }
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+          error: (err) => reject(err)
+        });
+      });
+
+      await postJSON({ final: true, filename: file.name, totalCount });
 
       setUploadStatus({
         type: 'success',
-        message: json.message,
-        recordCount: json.data?.recordCount
+        message: `${totalCount}件のデータを正常にアップロードしました。`,
+        recordCount: totalCount
       });
 
-      if (json.data?.recordCount) {
-        onUploadComplete?.(json.data.recordCount);
-      }
+      onUploadComplete?.(totalCount);
     } catch (error: any) {
       setUploadStatus({
         type: 'error',
