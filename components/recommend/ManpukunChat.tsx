@@ -215,11 +215,16 @@ export default function ManpukunChat({ recommendations, loading }: ManpukunChatP
                           </div>
                         )}
 
-                        {/* 詳細ボタン（将来的にはまん福のURLに遷移） */}
-                        <button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all flex items-center justify-center space-x-2">
+                        {/* 詳細ページへのリンク */}
+                        <a
+                          href={`https://www.manpuku.app/items/${rec.gift.gift_id}/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all flex items-center justify-center space-x-2"
+                        >
                           <ExternalLink size={14} />
                           <span>詳細を見る・申し込む</span>
-                        </button>
+                        </a>
                       </div>
                     ))}
                   </div>
