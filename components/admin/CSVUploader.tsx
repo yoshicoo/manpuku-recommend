@@ -59,15 +59,17 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
           header: true,
           skipEmptyLines: true,
           dynamicTyping: false,
-          transformHeader: (header: string) =>
-            header.replace(/^\uFEFF/, '').trim(),
           worker: true,
           chunk: async (results, parser) => {
             parser.pause();
             try {
               for (const row of results.data) {
-                if ((row as CSVRowData).返礼品ID && (row as CSVRowData).返礼品名) {
-                  buffer.push(transformCSVToReturnGift(row as CSVRowData));
+                const sanitized: Partial<CSVRowData> = {};
+                for (const [key, value] of Object.entries(row as CSVRowData)) {
+                  sanitized[key.replace(/^\uFEFF/, '').trim() as keyof CSVRowData] = value as any;
+                }
+                if ((sanitized as CSVRowData).返礼品ID && (sanitized as CSVRowData).返礼品名) {
+                  buffer.push(transformCSVToReturnGift(sanitized as CSVRowData));
                 }
                 if (buffer.length >= BATCH_SIZE) {
                   const batch = buffer.splice(0, buffer.length);
