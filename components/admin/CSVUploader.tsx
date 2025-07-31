@@ -48,6 +48,7 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
       if (!json.success) {
         throw new Error(json.message);
       }
+      return json;
     };
 
     try {
@@ -99,12 +100,16 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
         });
       });
 
-      await postJSON({ final: true, filename: file.name, totalCount });
+      const finalRes = await postJSON({
+        final: true,
+        filename: file.name,
+        totalCount
+      });
 
       setUploadStatus({
         type: 'success',
-        message: `${totalCount}件のデータを正常にアップロードしました。`,
-        recordCount: totalCount
+        message: `${finalRes.data.recordCount}件のデータを正常にアップロードしました。`,
+        recordCount: finalRes.data.recordCount
       });
 
       onUploadComplete?.(totalCount);
@@ -197,7 +202,7 @@ export default function CSVUploader({ onUploadComplete }: CSVUploaderProps) {
             `}>
               {uploadStatus.message}
             </p>
-            {uploadStatus.recordCount && (
+            {uploadStatus.recordCount !== undefined && (
               <p className="text-sm text-green-600 mt-1">
                 {uploadStatus.recordCount}件のデータが正常に登録されました。
               </p>
